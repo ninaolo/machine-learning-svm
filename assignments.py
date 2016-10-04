@@ -30,7 +30,7 @@ def create_random_classified_test_data():
     data = class_a + class_b
     random.shuffle(data)
 
-    return class_a, class_b
+    return data
 
 
 def plot_data(class_a, class_b):
@@ -41,3 +41,33 @@ def plot_data(class_a, class_b):
     pylab.plot([p[0] for p in class_b], [p[1] for p in class_b], 'ro')
 
     pylab.show()
+
+
+def create_p_matrix(data, kernel_function):
+    """ Creates an N x N matrix P.
+    P_ij = t_i * t_j * K(x_i, x_j)
+    N is the number of data points.
+    K is a kernel function.
+    t is the class (-1 or 1).
+    x is a vector with data points.
+    """
+
+    N = len(data)
+    P = numpy.zeros(N, N)
+
+    for i in range(N):
+        for j in range(N):
+            t_i = data[i][2]
+            t_j = data[j][2]
+            x_i = data[i][:2]
+            x_j = data[j][:2]
+
+            P[i, j] = t_i * t_j * kernel_function(x_i, x_j)
+
+    return P
+
+
+
+
+
+
