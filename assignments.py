@@ -45,15 +45,15 @@ def plot_data(class_a, class_b):
 
 def create_p_matrix(data, kernel_function):
     """ Creates an N x N matrix P.
-    P_ij = t_i * t_j * K(x_i, x_j)
-    N is the number of data points.
-    K is a kernel function.
-    t is the class (-1 or 1).
-    x is a vector with data points.
+        P_ij = t_i * t_j * K(x_i, x_j)
+        N is the number of data points.
+        K is a kernel function.
+        t is the class (-1 or 1).
+        x is a vector with data points.
     """
 
     N = len(data)
-    P = numpy.zeros(N, N)
+    P = numpy.zeros(shape=(N, N))
 
     for i in range(N):
         for j in range(N):
@@ -66,8 +66,114 @@ def create_p_matrix(data, kernel_function):
 
     return P
 
+def randomdata():
+    classA = [(random.normalvariate(-1.5, 10), random.normalvariate(0.5, 1), 1.0)
+              for i in range(5)] + \
+             [(random.normalvariate(1.5, 10), random.normalvariate(0.5, 1), 1.0)
+              for i in range(5)]
+
+    classB = [(random.normalvariate(0.0, 0.5), random.normalvariate(-0.5, 0.5), -1)
+              for i in range(10)]
+
+    return classA, classB
+
+def create_q_and_h_vectors(N):
+    """ Creates the q and h vectors necessary for
+        calling the qp function and finding an optimal
+        alpha, as stated in the beginning of this file.
+    """
+
+    q = numpy.empty(N)
+    q.fill(-1)
+
+    h = numpy.zeros(N)
+
+    return q, h
 
 
+def create_g_matrix(N):
+    """ Creates the G matrix necessary for
+    calling the qp function and finding an optimal
+    alpha, as stated in the beginning of this file.
+    """
+
+    G = numpy.zeros(shape=(N, N))
+    numpy.fill_diagonal(G, -1)
+
+    return G
 
 
+def find_optimal_alpha(data):
+    """ Calls the qp function and finds an optimal
+        alpha, as explained in the beginning of
+        this file.
+    """
 
+    # The chosen kernel function.
+    kernel_function = linear_kernel
+    N = len(data)
+
+    q, h = create_q_and_h_vectors(N)
+    G = create_g_matrix(N)
+
+    P = create_p_matrix(data, kernel_function)
+
+    # Call qp. This returns a dictionary data structure. The index 'x' contains the alpha values.
+    r = qp(matrix(P), matrix(q), matrix(G), matrix(h))
+    alpha = list(r['x'])
+
+    print(alpha)
+
+    return
+
+
+def pick_non_zero_alphas_and_create_indicator_list(data, alphas):
+    indicator_list = []
+    threshold = 10e-5
+
+    for i in range(len(alphas)):
+        alpha = alphas[i]
+
+        if alpha > threshold:
+            x = data[i][0]
+            y = data[i][1]
+            t = data[i][2]
+
+            values = (x, y, t, alpha)
+            indicator_list.append(values)
+
+    return indicator_list
+
+
+def indicator_function(x_star, y_star, indicator_list, kernel_function):
+    """ The indicator function can classify new data
+        points x* = (x, y). If positive, the class is 1. If
+        negative, the class is -1. A value
+        between -1 and 1 lies on the margin and this
+        should not happen. The t_i is the class and
+        x_i is the data point vector.
+
+        ind(x*) = sum( alpha_i * t_i * K(x*, x_i) )
+    """
+
+    N = len(indicator_list)
+    sum = 0
+
+    for i in range(N):
+
+        # The indicator_list contains the alpha, the class (t) and data points (x, y).
+        alpha_i = indicator_list[i][3]
+        t_i = indicator_list[i][2]
+        x_i = indicator_list[i][:2]
+
+        sum += alpha_i * t_i * kernel_function([x_star, y_star], x_i)
+
+    return sum
+
+
+def run():
+    data = create_random_classified_test_data()
+    find_optimal_alpha(data)
+
+
+run()
