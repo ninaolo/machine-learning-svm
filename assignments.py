@@ -27,6 +27,16 @@ def polynomial_kernel(x, y):
     return (numpy.dot(x_t, y) + 1) ** exp
 
 
+def radial_basis_kernel(x, y):
+    """ Returns the radial basis kernel function of two vectors x and y. """
+    param = 5
+    squared_euclidean_distance = 0
+    for square in numpy.power(numpy.subtract(x, y), 2):
+        squared_euclidean_distance += square
+
+    return math.exp(-squared_euclidean_distance / (math.pow(2 * param, 2)))
+
+
 def create_random_classified_test_data():
     """ Creates random data points (x, y) with two classes -1 and 1. """
 
@@ -189,7 +199,7 @@ def plot_points_on_margins(indicator_list):
 
 def run():
     # The chosen kernel function.
-    kernel_function = polynomial_kernel
+    kernel_function = radial_basis_kernel
 
     # Create random binary classified test data.
     class_a, class_b = create_random_classified_test_data()
