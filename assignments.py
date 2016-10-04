@@ -16,7 +16,15 @@ import numpy, pylab, random, math
 
 def linear_kernel(x, y):
     """ Returns the linear kernel function of two vectors x and y. """
-    return numpy.dot(x, y) + 1
+    x_t = numpy.transpose(x)
+    return numpy.dot(x_t, y) + 1
+
+
+def polynomial_kernel(x, y):
+    """ Returns the polynomial kernel function of two vectors x and y. """
+    exp = 4
+    x_t = numpy.transpose(x)
+    return (numpy.dot(x_t, y) + 1) ** exp
 
 
 def create_random_classified_test_data():
@@ -66,6 +74,7 @@ def create_p_matrix(data, kernel_function):
 
     return P
 
+
 def randomdata():
     classA = [(random.normalvariate(-1.5, 10), random.normalvariate(0.5, 1), 1.0)
               for i in range(5)] + \
@@ -76,6 +85,7 @@ def randomdata():
               for i in range(10)]
 
     return classA, classB
+
 
 def create_q_and_h_vectors(N):
     """ Creates the q and h vectors necessary for
@@ -103,14 +113,12 @@ def create_g_matrix(N):
     return G
 
 
-def find_optimal_alpha(data):
+def find_optimal_alphas(data, kernel_function):
     """ Calls the qp function and finds an optimal
         alpha, as explained in the beginning of
         this file.
     """
 
-    # The chosen kernel function.
-    kernel_function = linear_kernel
     N = len(data)
 
     q, h = create_q_and_h_vectors(N)
@@ -120,11 +128,11 @@ def find_optimal_alpha(data):
 
     # Call qp. This returns a dictionary data structure. The index 'x' contains the alpha values.
     r = qp(matrix(P), matrix(q), matrix(G), matrix(h))
-    alpha = list(r['x'])
+    alphas = list(r['x'])
 
-    print(alpha)
+    print(alphas)
 
-    return
+    return alphas
 
 
 def pick_non_zero_alphas_and_create_indicator_list(data, alphas):
@@ -160,7 +168,6 @@ def indicator_function(x_star, y_star, indicator_list, kernel_function):
     sum = 0
 
     for i in range(N):
-
         # The indicator_list contains the alpha, the class (t) and data points (x, y).
         alpha_i = indicator_list[i][3]
         t_i = indicator_list[i][2]
@@ -171,9 +178,32 @@ def indicator_function(x_star, y_star, indicator_list, kernel_function):
     return sum
 
 
+def plot_decision_boundary(indicator_list, kernel_function):
+    """ Plots the decision boundary of the classification. """
+
+    x_range = numpy.arange(-4, 4, 0.05)
+    y_range = numpy.arange(-4, 4, 0.05)
+
+    grid = matrix([[indicator_function(x, y, indicator_list, kernel_function) for y in y_range] for x in x_range])
+
+    pylab.contour(x_range, y_range, grid,
+                  (-1.0, 0.0, 1.0),
+                  colors=('red', 'black', 'blue'),
+                  linewidths=(1, 3, 1))
+
+    pylab.show()
+
+    return
+
+
 def run():
+    # The chosen kernel function.
+    kernel_function = polynomial_kernel
+
     data = create_random_classified_test_data()
-    find_optimal_alpha(data)
+    alphas = find_optimal_alphas(data, kernel_function)
+    indicator_list = pick_non_zero_alphas_and_create_indicator_list(data, alphas)
+    plot_decision_boundary(indicator_list, kernel_function)
 
 
 run()
