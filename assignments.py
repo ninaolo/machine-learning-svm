@@ -35,20 +35,15 @@ def create_random_classified_test_data():
 
     class_b = [(random.normalvariate(0.0, 0.5), random.normalvariate(-0.5, 0.5), -1.0) for i in range(10)]
 
-    data = class_a + class_b
-    random.shuffle(data)
-
-    return data
+    return class_a, class_b
 
 
-def plot_data(class_a, class_b):
+def plot_data_points(class_a, class_b, indicator_list, kernel_function):
     """ Plots two classes of data. """
     pylab.hold(True)
 
     pylab.plot([p[0] for p in class_a], [p[1] for p in class_a], 'bo')
     pylab.plot([p[0] for p in class_b], [p[1] for p in class_b], 'ro')
-
-    pylab.show()
 
 
 def create_p_matrix(data, kernel_function):
@@ -73,18 +68,6 @@ def create_p_matrix(data, kernel_function):
             P[i, j] = t_i * t_j * kernel_function(x_i, x_j)
 
     return P
-
-
-def randomdata():
-    classA = [(random.normalvariate(-1.5, 10), random.normalvariate(0.5, 1), 1.0)
-              for i in range(5)] + \
-             [(random.normalvariate(1.5, 10), random.normalvariate(0.5, 1), 1.0)
-              for i in range(5)]
-
-    classB = [(random.normalvariate(0.0, 0.5), random.normalvariate(-0.5, 0.5), -1)
-              for i in range(10)]
-
-    return classA, classB
 
 
 def create_q_and_h_vectors(N):
@@ -150,6 +133,9 @@ def pick_non_zero_alphas_and_create_indicator_list(data, alphas):
             values = (x, y, t, alpha)
             indicator_list.append(values)
 
+    print("Found " + str(len(alphas)) + " alphas in total.")
+    print("Found " + str(len(indicator_list)) + " that were non-zero.")
+
     return indicator_list
 
 
@@ -191,19 +177,36 @@ def plot_decision_boundary(indicator_list, kernel_function):
                   colors=('red', 'black', 'blue'),
                   linewidths=(1, 3, 1))
 
-    pylab.show()
 
-    return
+def plot_points_on_margins(indicator_list):
+    """ Plots the points on the margin.
+        This means that they are the support
+        vectors and that their alphas
+        are non-zero.
+    """
+    pylab.plot([p[0] for p in indicator_list], [p[1] for p in indicator_list], 'go')
 
 
 def run():
     # The chosen kernel function.
     kernel_function = polynomial_kernel
 
-    data = create_random_classified_test_data()
+    # Create random binary classified test data.
+    class_a, class_b = create_random_classified_test_data()
+
+    # Merge the data into one dataset and shuffle it.
+    data = class_a + class_b
+    random.shuffle(data)
+
+    # Find the optimal alphas with the given kernel function and data.
     alphas = find_optimal_alphas(data, kernel_function)
     indicator_list = pick_non_zero_alphas_and_create_indicator_list(data, alphas)
+
+    # Plot the data points and the found decision boundary.
+    plot_data_points(class_a, class_b, indicator_list, kernel_function)
     plot_decision_boundary(indicator_list, kernel_function)
+    plot_points_on_margins(indicator_list)
+    pylab.show()
 
 
 run()
