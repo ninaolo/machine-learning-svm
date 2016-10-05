@@ -12,6 +12,7 @@
 from cvxopt.solvers import qp
 from cvxopt.base import matrix
 import numpy, pylab, random, math
+import sys, getopt
 
 
 def linear_kernel(x, y):
@@ -37,13 +38,17 @@ def radial_basis_kernel(x, y):
     return math.exp(-squared_euclidean_distance / (math.pow(2 * param, 2)))
 
 
-def create_random_classified_test_data():
+def create_random_classified_test_data(size):
     """ Creates random data points (x, y) with two classes -1 and 1. """
+    b_size = int(size / 2)
+    a_size = size - b_size
+    a_size_1 = int(a_size / 2)
+    a_size_2 = a_size - a_size_1
 
-    class_a = [(random.normalvariate(-1.5, 1), random.normalvariate(0.5, 1), 1.0) for i in range(5)] + [
-        (random.normalvariate(1.5, 1), random.normalvariate(0.5, 1), 1.0) for i in range(5)]
+    class_a = [(random.normalvariate(-1.5, 1), random.normalvariate(0.5, 1), 1.0) for i in range(a_size_1)] + [
+        (random.normalvariate(1.5, 1), random.normalvariate(0.5, 1), 1.0) for i in range(a_size_2)]
 
-    class_b = [(random.normalvariate(0.0, 0.5), random.normalvariate(-0.5, 0.5), -1.0) for i in range(10)]
+    class_b = [(random.normalvariate(0.0, 0.5), random.normalvariate(-0.5, 0.5), -1.0) for i in range(b_size)]
 
     return class_a, class_b
 
@@ -129,6 +134,7 @@ def find_optimal_alphas(data, kernel_function):
 
 
 def pick_non_zero_alphas_and_create_indicator_list(data, alphas):
+    """ Picks the support vector alpha values. """
     indicator_list = []
     threshold = 10e-5
 
@@ -197,12 +203,12 @@ def plot_points_on_margins(indicator_list):
     pylab.plot([p[0] for p in indicator_list], [p[1] for p in indicator_list], 'go')
 
 
-def run():
-    # The chosen kernel function.
-    kernel_function = radial_basis_kernel
+def run(kernel=radial_basis_kernel, size=10):
+    # The selected kernel function.
+    kernel_function = kernel
 
     # Create random binary classified test data.
-    class_a, class_b = create_random_classified_test_data()
+    class_a, class_b = create_random_classified_test_data(size)
 
     # Merge the data into one dataset and shuffle it.
     data = class_a + class_b
@@ -219,4 +225,62 @@ def run():
     pylab.show()
 
 
-run()
+def print_main_help():
+    """ Prints help for the input of the main program. """
+    print('assignment.py -k <kernel function> -s <data size>')
+
+
+def get_kernel_from_input(input):
+    """ Validates the input of the kernel function. """
+    functions = {"linear": linear_kernel, "polynomial": polynomial_kernel, "radialbasis": radial_basis_kernel}
+    if input != "" and functions.get(input):
+        return functions.get(input)
+    else:
+        print("Valid functions: " + str(functions.keys()))
+        print_main_help()
+        sys.exit(2)
+
+
+def get_data_size_from_input(input):
+    """ Validates the input of the data size. """
+    try:
+        return int(input)
+    except ValueError:
+        print("You must supply an integer as data size input.")
+        print_main_help()
+        sys.exit(2)
+
+
+def main(argv):
+    """ Main. Checks all arguments and runs the SVM. """
+    kernel_input = ""
+    data_size_input = ""
+
+    try:
+        opts, args = getopt.getopt(argv, "hk:s:", ["kernel=", "size="])
+
+    except getopt.GetoptError:
+        print_main_help()
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt == '-h':
+            print_main_help()
+            sys.exit()
+        elif opt in ("-k", "--kernel"):
+            kernel_input = arg
+        elif opt in ("-s", "--size"):
+            data_size_input = arg
+
+    kernel_function = get_kernel_from_input(kernel_input)
+    data_size = get_data_size_from_input(data_size_input)
+
+    print("Kernel: " + kernel_input)
+    print("Data size: " + data_size_input)
+
+    run(kernel_function, data_size)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])
+
